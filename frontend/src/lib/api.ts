@@ -7,6 +7,8 @@ import type {
   SystemStats,
   Application,
   Website,
+  Domain,
+  Subdomain,
   DatabaseExtended,
   SSLCertificate,
   Mailbox,
@@ -126,6 +128,41 @@ export async function createWebsite(websiteData: Partial<Website>): Promise<ApiR
 
 export async function deleteWebsite(id: string): Promise<ApiResponse<void>> {
   return apiRequest<void>(`/api/v1/resources/websites/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// Domains & Subdomains
+export async function fetchDomains(): Promise<ApiResponse<Domain[]>> {
+  return apiRequest<Domain[]>('/api/v1/resources/domains');
+}
+
+export async function createDomain(domainData: Partial<Domain>): Promise<ApiResponse<Domain>> {
+  return apiRequest<Domain>('/api/v1/resources/domains', {
+    method: 'POST',
+    body: JSON.stringify(domainData),
+  });
+}
+
+export async function deleteDomain(id: string): Promise<ApiResponse<void>> {
+  return apiRequest<void>(`/api/v1/resources/domains/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchSubdomains(): Promise<ApiResponse<Subdomain[]>> {
+  return apiRequest<Subdomain[]>('/api/v1/resources/subdomains');
+}
+
+export async function createSubdomain(subdomainData: Partial<Subdomain>): Promise<ApiResponse<Subdomain>> {
+  return apiRequest<Subdomain>('/api/v1/resources/subdomains', {
+    method: 'POST',
+    body: JSON.stringify(subdomainData),
+  });
+}
+
+export async function deleteSubdomain(id: string): Promise<ApiResponse<void>> {
+  return apiRequest<void>(`/api/v1/resources/subdomains/${id}`, {
     method: 'DELETE',
   });
 }
