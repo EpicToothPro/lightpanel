@@ -4,26 +4,46 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { StatCard } from '@/components/shared/stat-card';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { mockApplications, mockWebsites, mockDatabases, mockSSLCertificates } from '@/lib/mock-data';
 import { fetchSystemStats, fetchApplications, fetchWebsites, fetchDatabases } from '@/lib/api';
+import type { Application, Website, DatabaseExtended } from '@/types';
+
+// Clean SVG Icons for Dashboard Metrics
+function CpuIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>;
+}
+
+function RamIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><rect width="20" height="8" x="2" y="8" rx="2"/><path d="M2 5h20"/></svg>;
+}
+
+function DiskIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>;
+}
+
+function LayersIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L3.18 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L3.18 17.5"/></svg>;
+}
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState({
-    cpuUsagePct: 18.4,
-    ramUsagePct: 42.1,
-    diskUsagePct: 29.8,
-    activeAppsCount: 6,
-    activeWebsitesCount: 4,
-    activeDatabasesCount: 5,
-    validSslCount: 8,
+  const [systemInfo, setSystemInfo] = useState({
+    cpuPercent: 0,
+    cpuCores: 1,
+    memUsedMb: 0,
+    memTotalMb: 0,
+    memPercent: 0,
+    diskUsedGb: 0,
+    diskTotalGb: 0,
+    diskPercent: 0,
+    uptime: '--',
+    hostname: 'lightpanel-node',
   });
-  const [apps, setApps] = useState(mockApplications);
-  const [websites, setWebsites] = useState(mockWebsites);
-  const [databases, setDatabases] = useState(mockDatabases);
+  const [apps, setApps] = useState<Application[]>([]);
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [databases, setDatabases] = useState<DatabaseExtended[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadData() {
+    async function loadLiveData() {
       try {
         const [statsRes, appsRes, sitesRes, dbRes] = await Promise.all([
           fetchSystemStats(),
@@ -33,14 +53,18 @@ export default function DashboardPage() {
         ]);
 
         if (statsRes.success && statsRes.data) {
-          setStats({
-            cpuUsagePct: statsRes.data.cpu_usage ?? 18.4,
-            ramUsagePct: statsRes.data.mem_percent ?? 42.1,
-            diskUsagePct: statsRes.data.disk_percent ?? 29.8,
-            activeAppsCount: appsRes.data?.length ?? 6,
-            activeWebsitesCount: sitesRes.data?.length ?? 4,
-            activeDatabasesCount: dbRes.data?.length ?? 5,
-            validSslCount: 8,
+          const s = statsRes.data as any;
+          setSystemInfo({
+            cpuPercent: s.cpu_usage ?? 0,
+            cpuCores: s.cpu_cores ?? 1,
+            memUsedMb: s.mem_used_mb ?? 0,
+            memTotalMb: s.mem_total_mb ?? 0,
+            memPercent: s.mem_percent ?? 0,
+            diskUsedGb: s.disk_used_gb ?? 0,
+            diskTotalGb: s.disk_total_gb ?? 0,
+            diskPercent: s.disk_percent ?? 0,
+            uptime: s.uptime ?? '--',
+            hostname: s.hostname ?? 'lightpanel-node',
           });
         }
 
@@ -54,13 +78,16 @@ export default function DashboardPage() {
           setDatabases(dbRes.data);
         }
       } catch (err) {
-        // Fallback to initial state
+        // Handled cleanly
       } finally {
         setLoading(false);
       }
     }
-    loadData();
+    loadLiveData();
   }, []);
+
+  const ramUsedGb = (systemInfo.memUsedMb / 1024).toFixed(1);
+  const ramTotalGb = (systemInfo.memTotalMb / 1024).toFixed(1);
 
   return (
     <div className="space-y-6">
@@ -68,11 +95,11 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-indigo-950/40 via-[#12121a] to-cyan-950/40 border border-[#1e293b] rounded-2xl p-6 shadow-xl relative overflow-hidden">
         <div className="space-y-1 relative z-10">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            VPS Infrastructure Overview
+            Infrastructure Overview
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
           </h1>
           <p className="text-xs text-slate-400">
-            Self-Hosted Server Management Node • Hostname: <span className="font-mono text-slate-300">vps-prod-01</span>
+            Node: <span className="font-mono text-slate-300">{systemInfo.hostname}</span> • Uptime: <span className="font-mono text-slate-300">{systemInfo.uptime}</span>
           </p>
         </div>
         <div className="flex items-center gap-3 relative z-10">
@@ -86,7 +113,7 @@ export default function DashboardPage() {
             href="/email/webmail"
             className="px-4 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white transition-colors shadow-lg shadow-cyan-500/20 flex items-center gap-2"
           >
-            <span>✉ Open Webmail</span>
+            <span>Open Webmail</span>
           </Link>
         </div>
       </div>
@@ -94,33 +121,31 @@ export default function DashboardPage() {
       {/* Primary Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="CPU Core Load"
-          value={`${stats.cpuUsagePct}%`}
-          subtitle="8 vCPUs • 2.4 GHz"
-          icon={<span className="text-lg">⚡</span>}
+          title="CPU Load"
+          value={`${systemInfo.cpuPercent}%`}
+          subtitle={`${systemInfo.cpuCores} vCPU Core(s)`}
+          icon={<CpuIcon />}
           color="indigo"
-          trend={{ value: -2.1, label: 'vs last hour' }}
         />
         <StatCard
           title="Memory Usage"
-          value={`${stats.ramUsagePct}%`}
-          subtitle="6.7 GB / 16.0 GB Used"
-          icon={<span className="text-lg">🧠</span>}
+          value={`${systemInfo.memPercent}%`}
+          subtitle={`${ramUsedGb} GB / ${ramTotalGb} GB Used`}
+          icon={<RamIcon />}
           color="cyan"
-          trend={{ value: 1.4, label: 'vs last hour' }}
         />
         <StatCard
-          title="NVMe Storage"
-          value={`${stats.diskUsagePct}%`}
-          subtitle="149 GB / 500 GB Used"
-          icon={<span className="text-lg">💾</span>}
+          title="Storage Usage"
+          value={`${systemInfo.diskPercent}%`}
+          subtitle={`${systemInfo.diskUsedGb} GB / ${systemInfo.diskTotalGb} GB Used`}
+          icon={<DiskIcon />}
           color="emerald"
         />
         <StatCard
           title="Active Workloads"
-          value={stats.activeAppsCount + stats.activeWebsitesCount}
-          subtitle={`${stats.activeAppsCount} Apps • ${stats.activeWebsitesCount} Websites`}
-          icon={<span className="text-lg">🚀</span>}
+          value={apps.length + websites.length}
+          subtitle={`${apps.length} Applications • ${websites.length} Websites`}
+          icon={<LayersIcon />}
           color="purple"
         />
       </div>
@@ -139,23 +164,27 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-2">
-            {apps.slice(0, 4).map((app) => (
-              <div key={app.id} className="flex items-center justify-between p-3 rounded-lg bg-[#0a0a0f] border border-[#1e293b] hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-mono font-bold">
-                    {app.runtime.substring(0, 2).toUpperCase()}
+            {apps.length === 0 ? (
+              <p className="text-xs text-slate-500 py-4 text-center">No applications deployed yet.</p>
+            ) : (
+              apps.slice(0, 4).map((app) => (
+                <div key={app.id} className="flex items-center justify-between p-3 rounded-lg bg-[#0a0a0f] border border-[#1e293b] hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-mono font-bold">
+                      {app.runtime.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-slate-200">{app.name}</h3>
+                      <p className="text-[10px] text-slate-400 font-mono">{app.domain || 'Internal Port ' + app.port}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-slate-200">{app.name}</h3>
-                    <p className="text-[10px] text-slate-400 font-mono">{app.domain || 'Internal Port ' + app.port}</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">{app.runtime} {app.version}</span>
+                    <StatusBadge status={app.status} />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">{app.runtime} {app.version}</span>
-                  <StatusBadge status={app.status} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -171,20 +200,24 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-2">
-            {databases.slice(0, 4).map((db) => (
-              <div key={db.id} className="flex items-center justify-between p-3 rounded-lg bg-[#0a0a0f] border border-[#1e293b] hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-mono font-bold">
-                    {db.type.substring(0, 2).toUpperCase()}
+            {databases.length === 0 ? (
+              <p className="text-xs text-slate-500 py-4 text-center">No databases provisioned yet.</p>
+            ) : (
+              databases.slice(0, 4).map((db) => (
+                <div key={db.id} className="flex items-center justify-between p-3 rounded-lg bg-[#0a0a0f] border border-[#1e293b] hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-mono font-bold">
+                      {db.type.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-slate-200 font-mono">{db.name}</h3>
+                      <p className="text-[10px] text-slate-400">Host: {db.host || 'localhost'} • {db.storage_used_mb || 0} MB</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-slate-200 font-mono">{db.name}</h3>
-                    <p className="text-[10px] text-slate-400">User: {db.username} • {db.storage_used_mb} MB</p>
-                  </div>
+                  <StatusBadge status={db.status} />
                 </div>
-                <StatusBadge status={db.status} />
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

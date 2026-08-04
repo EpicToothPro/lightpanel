@@ -3,7 +3,23 @@
 import React, { useState } from 'react';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
-import { mockWebsites, mockDomains } from '@/lib/mock-data';
+import { mockDomains } from '@/lib/mock-data';
+
+function EyeIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>;
+}
+
+function UserIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+}
+
+function ClockIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+}
+
+function TrendIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>;
+}
 
 export default function AnalyticsPage() {
   const [globalEnabled, setGlobalEnabled] = useState(true);
@@ -48,10 +64,10 @@ export default function AnalyticsPage() {
         <div className="space-y-6">
           {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title="Total Pageviews (30d)" value="12,450" icon={<span className="text-lg">👁️</span>} color="indigo" trend={{ value: 14.2, label: 'vs last month' }} />
-            <StatCard title="Unique Visitors" value="3,200" icon={<span className="text-lg">👤</span>} color="cyan" trend={{ value: 8.7, label: 'vs last month' }} />
-            <StatCard title="Avg. Visit Duration" value="2m 22s" icon={<span className="text-lg">⏱️</span>} color="emerald" />
-            <StatCard title="Bounce Rate" value="32.4%" icon={<span className="text-lg">📉</span>} color="purple" />
+            <StatCard title="Total Pageviews" value="12,450" icon={<EyeIcon />} color="indigo" trend={{ value: 14.2, label: 'vs last month' }} />
+            <StatCard title="Unique Visitors" value="3,200" icon={<UserIcon />} color="cyan" trend={{ value: 8.7, label: 'vs last month' }} />
+            <StatCard title="Avg. Visit Duration" value="2m 22s" icon={<ClockIcon />} color="emerald" />
+            <StatCard title="Bounce Rate" value="32.4%" icon={<TrendIcon />} color="purple" />
           </div>
 
           {/* Breakdown Tables */}
