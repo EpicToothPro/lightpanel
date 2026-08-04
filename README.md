@@ -12,6 +12,16 @@
 
 ---
 
+## ⚡ Single-Line Installation Command
+
+Run this command as `root` or with `sudo` on any standard Debian, Ubuntu, or RHEL-based server:
+
+```bash
+git clone https://github.com/EpicToothPro/lightpanel.git /opt/lightpanel && cd /opt/lightpanel && chmod +x install.sh && sudo ./install.sh
+```
+
+---
+
 ## 🌟 Key Architecture & Features
 
 ### Core Infrastructure & App Management
@@ -59,6 +69,7 @@ lightpanel/
 │   │   ├── controllers/      # Auth, Setup, Resources, Email & Analytics APIs
 │   │   ├── workers/          # Redis background job queue runner
 │   │   └── tests/            # Security & unit test suite
+│   ├── Dockerfile
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/                 # Next.js 14/16 App Router Control Panel Dashboard
@@ -67,47 +78,26 @@ lightpanel/
 │   │   ├── components/       # Layout shell, Sidebar, Topbar, StatCards, Badges, Dialogs
 │   │   ├── lib/              # API client, Mock data provider, Utility helpers
 │   │   └── types/            # Complete TypeScript interface definitions
+│   ├── Dockerfile
 │   ├── package.json
 │   └── globals.css           # Premium Dark Theme Design System
-├── docker-compose.yml        # Docker Compose orchestration
-├── install.sh                # One-command automated Linux installer script
+├── docker-compose.yml        # Modernized Docker Compose orchestration
+├── install.sh                # Single-step automated Linux installer script
 └── .env.example              # Template environment configuration
 ```
 
 ---
 
-## 🚀 Quick Start & Installation for @EpicToothPro
+## 🧙‍♂️ First-Run Setup Wizard
 
-### Option A: Automated One-Command Installer (Linux VPS)
-```bash
-git clone https://github.com/EpicToothPro/lightpanel.git /opt/lightpanel && cd /opt/lightpanel && chmod +x install.sh && sudo ./install.sh && docker compose up -d
-```
-
-### Option B: Manual Docker Compose Deployment
-```bash
-# 1. Clone repository
-git clone https://github.com/EpicToothPro/lightpanel.git
-cd lightpanel
-
-# 2. Configure environment
-cp .env.example .env
-
-# 3. Start services with Docker Compose
-docker compose up -d
-```
-
----
-
-## ⚡ First-Run Setup Wizard
-
-Once the services are running, open your browser and navigate to:
+Once installed, open your browser and navigate to:
 ```text
 http://<your-server-ip>:3000/setup
 ```
 
 Follow the 10-step wizard:
 1. **Server Identity** (Hostname configuration)
-2. **Admin Account Creation** (Master credentials for EpicToothPro)
+2. **Admin Account Creation** (Master credentials)
 3. **PostgreSQL Database** (Panel database connection)
 4. **Redis Cache & Queue** (Task runner setup)
 5. **Mail Server Config** (Postfix / Dovecot setup)
