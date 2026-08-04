@@ -1,0 +1,16 @@
+{
+    "mode": "medium",
+    "listen_addr": ":8443",
+    "db_host": "127.0.0.1",
+    "db_port": 3306,
+    "db_root_user": "root",
+    "db_root_pass": "",
+    "nginx_sites_available": "/etc/nginx/sites-available",
+    "nginx_sites_enabled": "/etc/nginx/sites-enabled",
+    "web_root": "/var/www",
+    "max_workers": 0,
+    "poll_interval_sec": 0,
+    "admin_user": "admin",
+    "admin_pass": "changeme",
+    "cert_email": "admin@example.com"
+}

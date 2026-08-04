@@ -1,0 +1,65 @@
+{{define "page-title"}}Sites{{end}}
+{{define "content"}}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Site Manager</h1>
+    <p class="text-slate-400 mt-2">Create and manage your web hosting environments.</p>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+    <!-- Form Area -->
+    <div class="xl:col-span-1">
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <!-- Decorative gradient -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none -mr-16 -mt-16"></div>
+            
+            <h3 class="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Site
+            </h3>
+
+            <form hx-post="/api/sites" hx-target="#site-list" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) this.reset(); togglePhpVersion()" class="space-y-5 relative z-10">
+                
+                <div>
+                    <label for="domain" class="block text-sm font-medium text-slate-300 mb-1.5">Domain Name</label>
+                    <input type="text" id="domain" name="domain" placeholder="example.com" required
+                        class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600">
+                </div>
+
+                <div>
+                    <label for="site_type" class="block text-sm font-medium text-slate-300 mb-1.5">Site Type</label>
+                    <select id="site_type" name="site_type" onchange="togglePhpVersion()"
+                        class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all appearance-none cursor-pointer">
+                        <option value="static">Static HTML</option>
+                        <option value="php">PHP App</option>
+                    </select>
+                </div>
+
+                <div id="php_version_container" class="hidden opacity-0 transition-opacity duration-300">
+                    <label for="php_version" class="block text-sm font-medium text-slate-300 mb-1.5">PHP Version</label>
+                    <input type="text" id="php_version" name="php_version" value="8.2" placeholder="8.2"
+                        class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600">
+                </div>
+
+                <button type="submit" class="w-full mt-4 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-medium py-2.5 px-4 rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all duration-300 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Deploy Site
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- List Area -->
+    <div class="xl:col-span-2">
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-xl font-semibold text-slate-100 mb-6">Configured Sites</h3>
+            <div id="site-list">
+                {{template "site-list" .}}
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

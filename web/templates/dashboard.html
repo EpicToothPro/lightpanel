@@ -1,0 +1,77 @@
+{{define "page-title"}}Dashboard{{end}}
+{{define "content"}}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Dashboard</h1>
+    <p class="text-slate-400 mt-2">Overview of your server performance and hosted resources.</p>
+</div>
+
+<!-- Stats Area -->
+<div hx-get="/api/stats" hx-trigger="every {{if .Config}}{{.Config.PollIntervalSec}}{{else}}10{{end}}s" hx-swap="innerHTML" class="mb-8 relative group">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-violet-500/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>
+    {{template "stats" .}}
+</div>
+
+<!-- Lower Section Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Server Info Card -->
+    <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:border-slate-600/50 transition-all duration-300">
+        <h3 class="text-lg font-semibold text-slate-100 mb-6 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+            </svg>
+            System Information
+        </h3>
+        
+        <div class="space-y-4">
+            <div class="flex justify-between items-center py-3 border-b border-slate-700/50">
+                <span class="text-slate-400 text-sm">Hostname</span>
+                <span class="text-slate-200 font-medium">{{if .Stats}}{{.Stats.Hostname}}{{else}}unknown{{end}}</span>
+            </div>
+            <div class="flex justify-between items-center py-3 border-b border-slate-700/50">
+                <span class="text-slate-400 text-sm">Uptime</span>
+                <span class="text-slate-200 font-medium">{{if .Stats}}{{.Stats.Uptime}}{{else}}--{{end}}</span>
+            </div>
+            <div class="flex justify-between items-center py-3 border-b border-slate-700/50">
+                <span class="text-slate-400 text-sm">Load Average</span>
+                <span class="text-slate-200 font-medium">{{if .Stats}}{{.Stats.LoadAvg}}{{else}}--{{end}}</span>
+            </div>
+            <div class="flex justify-between items-center py-3">
+                <span class="text-slate-400 text-sm">Listen Address</span>
+                <span class="text-slate-200 font-medium font-mono text-sm bg-slate-900/50 px-2 py-1 rounded border border-slate-700/50">{{if .Config}}{{.Config.ListenAddr}}{{else}}--{{end}}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Card -->
+    <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:border-slate-600/50 transition-all duration-300">
+        <h3 class="text-lg font-semibold text-slate-100 mb-6 flex items-center gap-2">
+            <svg class="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Quick Actions & Summary
+        </h3>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <a href="/sites" class="group block p-4 rounded-xl bg-slate-900/50 border border-slate-700/50 hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all duration-300">
+                <div class="text-3xl font-bold text-slate-100 group-hover:text-indigo-400 transition-colors">{{.SiteCount}}</div>
+                <div class="text-sm text-slate-400 mt-1 font-medium">Total Sites</div>
+            </a>
+            <a href="/databases" class="group block p-4 rounded-xl bg-slate-900/50 border border-slate-700/50 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all duration-300">
+                <div class="text-3xl font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">{{.DBCount}}</div>
+                <div class="text-sm text-slate-400 mt-1 font-medium">Databases</div>
+            </a>
+            <a href="/ssl" class="group block p-4 rounded-xl bg-slate-900/50 border border-slate-700/50 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all duration-300 col-span-2">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-3xl font-bold text-slate-100 group-hover:text-amber-400 transition-colors">{{.CertCount}}</div>
+                        <div class="text-sm text-slate-400 mt-1 font-medium">Active Certificates</div>
+                    </div>
+                    <svg class="w-8 h-8 text-slate-600 group-hover:text-amber-400/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{{end}}

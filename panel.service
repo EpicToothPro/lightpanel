@@ -1,0 +1,21 @@
+[Unit]
+Description=LightPanel - Lightweight Hosting Control Panel
+After=network.target nginx.service mariadb.service
+Wants=nginx.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/lightpanel
+ExecStart=/opt/lightpanel/lightpanel -config /opt/lightpanel/config.json
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+Environment=GOMAXPROCS=2
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lightpanel
+
+[Install]
+WantedBy=multi-user.target

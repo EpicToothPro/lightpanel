@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # LightPanel Backend API & Worker Engine
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lightpanel-backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://postgres:postgres_secure_pass@postgres:5432/lightpanel
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=lightpanel_jwt_secret_key_change_me
+    depends_on:
+      - postgres
+      - redis
+
+  # LightPanel Frontend Next.js Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lightpanel-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+
+  # Core PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: lightpanel-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: lightpanel
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  # Redis Cache, Rate-Limiting & Worker Queue
+  redis:
+    image: redis:7-alpine
+    container_name: lightpanel-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: lightpanel-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8443:8443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /var/www:/var/www
+
+volumes:
+  postgres_data:
+  redis_data:

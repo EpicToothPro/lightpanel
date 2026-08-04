@@ -1,0 +1,62 @@
+{{define "page-title"}}Databases{{end}}
+{{define "content"}}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Database Manager</h1>
+    <p class="text-slate-400 mt-2">Manage your MySQL/MariaDB databases and users.</p>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+    <!-- Form Area -->
+    <div class="xl:col-span-1">
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <!-- Decorative gradient -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-16 -mt-16"></div>
+            
+            <h3 class="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Database
+            </h3>
+
+            <form hx-post="/api/databases" hx-target="#db-list" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-5 relative z-10">
+                
+                <div>
+                    <label for="db_name" class="block text-sm font-medium text-slate-300 mb-1.5">Database Name</label>
+                    <input type="text" id="db_name" name="db_name" placeholder="app_db" required
+                        class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600">
+                </div>
+
+                <div>
+                    <label for="db_user" class="block text-sm font-medium text-slate-300 mb-1.5">Database User</label>
+                    <input type="text" id="db_user" name="db_user" placeholder="db_user" required
+                        class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600">
+                </div>
+
+                <div>
+                    <label for="db_pass" class="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                    <input type="password" id="db_pass" name="db_pass" placeholder="••••••••" required
+                        class="w-full bg-slate-900/80 border border-slate-700 text-slate-100 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600">
+                </div>
+
+                <button type="submit" class="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-medium py-2.5 px-4 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all duration-300 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    Create Database
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- List Area -->
+    <div class="xl:col-span-2">
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-xl font-semibold text-slate-100 mb-6">Existing Databases</h3>
+            <div id="db-list">
+                {{template "db-list" .}}
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
