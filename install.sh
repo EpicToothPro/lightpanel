@@ -75,7 +75,13 @@ if [ ! -f "docker-compose.yml" ]; then
   exit 1
 fi
 
-# 7. Check Docker installation
+# 7. Stop host-level redis/postgresql if conflicting with container network
+if command -v systemctl &> /dev/null; then
+  systemctl stop redis-server redis postgresql 2>/dev/null || true
+  systemctl disable redis-server redis postgresql 2>/dev/null || true
+fi
+
+# 8. Check Docker installation
 echo "[INFO] Verifying Docker environment..."
 if ! command -v docker &> /dev/null; then
   echo "[INFO] Docker not detected. Installing Docker engine via official script..."
@@ -107,7 +113,7 @@ fi
 
 echo "[OK] Using Compose engine: '$DOCKER_COMPOSE_CMD'"
 
-# 8. Build and start containers
+# 9. Build and start containers
 echo "[INFO] Building and launching LightPanel service containers..."
 $DOCKER_COMPOSE_CMD up -d --build
 

@@ -15,10 +15,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:-lightpanel_jwt_secret_key_change_me}
     depends_on:
-      postgres:
-        condition: service_started
-      redis:
-        condition: service_started
+      - postgres
+      - redis
 
   # LightPanel Frontend Next.js Dashboard
   frontend:
@@ -34,7 +32,7 @@ services:
     depends_on:
       - backend
 
-  # Core PostgreSQL Database
+  # Core PostgreSQL Database (internal container routing)
   postgres:
     image: postgres:16-alpine
     container_name: lightpanel-postgres
@@ -43,19 +41,15 @@ services:
       POSTGRES_DB: lightpanel
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
-  # Redis Cache, Rate-Limiting & Worker Queue
+  # Redis Cache, Rate-Limiting & Worker Queue (internal container routing)
   redis:
     image: redis:7-alpine
     container_name: lightpanel-redis
     restart: always
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
