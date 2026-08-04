@@ -16,23 +16,31 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Check and handle directory paths (prevent self-copy error)
+REPO_URL="https://github.com/EpicToothPro/lightpanel.git"
 TARGET_DIR="/opt/lightpanel"
-CURRENT_DIR="$(pwd -P)"
-REAL_TARGET_DIR="$(mkdir -p "$TARGET_DIR" && cd "$TARGET_DIR" && pwd -P)"
+CURRENT_DIR="$(pwd -P 2>/dev/null || echo '')"
 
-if [ "$CURRENT_DIR" != "$REAL_TARGET_DIR" ]; then
-  echo "📦 Copying LightPanel files to $TARGET_DIR..."
-  cp -r . "$TARGET_DIR/"
+# 2. Smart Repository Acquisition (Clone or Update)
+if [ ! -d "$TARGET_DIR/.git" ]; then
+  echo "📥 Cloning LightPanel repository from GitHub to $TARGET_DIR..."
+  mkdir -p "$TARGET_DIR"
+  git clone "$REPO_URL" "$TARGET_DIR"
   cd "$TARGET_DIR"
 else
-  echo "📂 Already running inside $TARGET_DIR, skipping self-copy."
+  REAL_TARGET_DIR="$(cd "$TARGET_DIR" && pwd -P)"
+  if [ "$CURRENT_DIR" != "$REAL_TARGET_DIR" ]; then
+    echo "📦 Copying files to $TARGET_DIR..."
+    cp -r . "$TARGET_DIR/"
+    cd "$TARGET_DIR"
+  else
+    echo "📂 Running inside $TARGET_DIR"
+  fi
 fi
 
 # 3. Handle Git Submodules Automatically
 if [ -d ".git" ] || [ -f ".gitmodules" ]; then
   echo "🔄 Syncing Git submodules..."
-  git submodule update --init --recursive || echo "⚠️ Warning: Git submodule update skipped."
+  git submodule update --init --recursive || true
 fi
 
 # 4. Environment File (.env) Handling
@@ -57,7 +65,7 @@ else
   echo "✅ Docker is already installed."
 fi
 
-# Determine Docker Compose Command (Plugin vs Standalone)
+# Determine Docker Compose Command
 DOCKER_COMPOSE_CMD=""
 if docker compose version &> /dev/null; then
   DOCKER_COMPOSE_CMD="docker compose"
