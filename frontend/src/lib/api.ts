@@ -1,41 +1,47 @@
 // ============================================================================
-// LightPanel API Client
-// Connects to the Go backend with HTTP Basic Auth
+// LightPanel Full-Stack API Client
+// Connects Frontend to Node.js TypeScript REST API (/api/v1) with JWT & WebSocket support
 // ============================================================================
 
 import type {
   SystemStats,
-  SiteConfig,
-  DatabaseInfo,
-  CertInfo,
-  CreateSiteForm,
-  CreateDatabaseForm,
+  Application,
+  Website,
+  DatabaseExtended,
+  SSLCertificate,
+  Mailbox,
+  EmailDomain,
+  EmailAlias,
+  MailMessage,
   ApiResponse,
 } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8443';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
-// Credentials stored in session, never hardcoded
-let credentials: { username: string; password: string } | null = null;
+let jwtToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('lightpanel_token') : null;
 
-export function setCredentials(username: string, password: string) {
-  credentials = { username, password };
+export function setAuthToken(token: string) {
+  jwtToken = token;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('lightpanel_token', token);
+  }
 }
 
-export function clearCredentials() {
-  credentials = null;
-}
-
-export function hasCredentials(): boolean {
-  return credentials !== null;
+export function clearAuthToken() {
+  jwtToken = null;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('lightpanel_token');
+  }
 }
 
 function getAuthHeaders(): HeadersInit {
-  if (!credentials) return {};
-  const encoded = btoa(`${credentials.username}:${credentials.password}`);
-  return {
-    Authorization: `Basic ${encoded}`,
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
   };
+  if (jwtToken) {
+    headers['Authorization'] = `Bearer ${jwtToken}`;
+  }
+  return headers;
 }
 
 async function apiRequest<T>(
@@ -47,106 +53,154 @@ async function apiRequest<T>(
       ...options,
       headers: {
         ...getAuthHeaders(),
-        'Content-Type': 'application/json',
         ...options.headers,
       },
     });
 
     if (response.status === 401) {
-      return { success: false, error: 'Authentication failed' };
+      clearAuthToken();
+      return { success: false, error: 'Authentication required' };
     }
 
     if (!response.ok) {
       const text = await response.text();
-      return { success: false, error: text || `HTTP ${response.status}` };
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const json = JSON.parse(text);
+        if (json.error) errorMessage = json.error;
+      } catch (e) {
+        if (text) errorMessage = text;
+      }
+      return { success: false, error: errorMessage };
     }
 
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
-      const data = await response.json();
-      return { success: true, data };
+      const json = await response.json();
+      return { success: true, data: json.data || json };
     }
 
     return { success: true, data: undefined as unknown as T };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Network error',
+      error: error instanceof Error ? error.message : 'Network connection failure',
     };
   }
 }
 
-// --- Stats ---
-export async function fetchStats(): Promise<ApiResponse<SystemStats>> {
-  return apiRequest<SystemStats>('/api/stats');
+// System Health & Stats
+export async function fetchSystemStats(): Promise<ApiResponse<SystemStats>> {
+  return apiRequest<SystemStats>('/api/v1/resources/stats');
 }
 
-// --- Sites ---
-export async function fetchSites(): Promise<ApiResponse<SiteConfig[]>> {
-  return apiRequest<SiteConfig[]>('/api/sites');
+// Workload Applications
+export async function fetchApplications(): Promise<ApiResponse<Application[]>> {
+  return apiRequest<Application[]>('/api/v1/resources/apps');
 }
 
-export async function createSite(form: CreateSiteForm): Promise<ApiResponse<void>> {
-  const formData = new URLSearchParams();
-  formData.append('domain', form.domain);
-  formData.append('site_type', form.site_type);
-  if (form.php_version) formData.append('php_version', form.php_version);
-
-  return apiRequest<void>('/api/sites', {
+export async function createApplication(appData: Partial<Application>): Promise<ApiResponse<Application>> {
+  return apiRequest<Application>('/api/v1/resources/apps', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: formData.toString(),
+    body: JSON.stringify(appData),
   });
 }
 
-export async function deleteSite(domain: string): Promise<ApiResponse<void>> {
-  return apiRequest<void>(`/api/sites?domain=${encodeURIComponent(domain)}`, {
+export async function deleteApplication(id: string): Promise<ApiResponse<void>> {
+  return apiRequest<void>(`/api/v1/resources/apps/${id}`, {
     method: 'DELETE',
   });
 }
 
-// --- Databases ---
-export async function fetchDatabases(): Promise<ApiResponse<DatabaseInfo[]>> {
-  return apiRequest<DatabaseInfo[]>('/api/databases');
+// Websites & Hosting
+export async function fetchWebsites(): Promise<ApiResponse<Website[]>> {
+  return apiRequest<Website[]>('/api/v1/resources/websites');
 }
 
-export async function createDatabase(form: CreateDatabaseForm): Promise<ApiResponse<void>> {
-  const formData = new URLSearchParams();
-  formData.append('db_name', form.db_name);
-  formData.append('db_user', form.db_user);
-  formData.append('db_pass', form.db_pass);
-
-  return apiRequest<void>('/api/databases', {
+export async function createWebsite(websiteData: Partial<Website>): Promise<ApiResponse<Website>> {
+  return apiRequest<Website>('/api/v1/resources/websites', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: formData.toString(),
+    body: JSON.stringify(websiteData),
   });
 }
 
-export async function deleteDatabase(name: string, user: string): Promise<ApiResponse<void>> {
-  return apiRequest<void>(`/api/databases?name=${encodeURIComponent(name)}&user=${encodeURIComponent(user)}`, {
+export async function deleteWebsite(id: string): Promise<ApiResponse<void>> {
+  return apiRequest<void>(`/api/v1/resources/websites/${id}`, {
     method: 'DELETE',
   });
 }
 
-// --- SSL ---
-export async function fetchSSLCertificates(): Promise<ApiResponse<CertInfo[]>> {
-  return apiRequest<CertInfo[]>('/api/ssl');
+// Database Provisioning
+export async function fetchDatabases(): Promise<ApiResponse<DatabaseExtended[]>> {
+  return apiRequest<DatabaseExtended[]>('/api/v1/resources/databases');
 }
 
-export async function issueSSLCertificate(domain: string): Promise<ApiResponse<void>> {
-  const formData = new URLSearchParams();
-  formData.append('domain', domain);
-
-  return apiRequest<void>('/api/ssl', {
+export async function createDatabase(dbData: Partial<DatabaseExtended>): Promise<ApiResponse<DatabaseExtended>> {
+  return apiRequest<DatabaseExtended>('/api/v1/resources/databases', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: formData.toString(),
+    body: JSON.stringify(dbData),
   });
 }
 
-export async function revokeSSLCertificate(domain: string): Promise<ApiResponse<void>> {
-  return apiRequest<void>(`/api/ssl?domain=${encodeURIComponent(domain)}`, {
+export async function deleteDatabase(id: string): Promise<ApiResponse<void>> {
+  return apiRequest<void>(`/api/v1/resources/databases/${id}`, {
     method: 'DELETE',
+  });
+}
+
+// SSL / TLS Certificates
+export async function fetchSSLCertificates(): Promise<ApiResponse<SSLCertificate[]>> {
+  return apiRequest<SSLCertificate[]>('/api/v1/resources/ssl');
+}
+
+export async function issueSSLCertificate(domain: string): Promise<ApiResponse<SSLCertificate>> {
+  return apiRequest<SSLCertificate>('/api/v1/resources/ssl/issue', {
+    method: 'POST',
+    body: JSON.stringify({ domain }),
+  });
+}
+
+// Email Domains & Mailboxes
+export async function fetchEmailDomains(): Promise<ApiResponse<EmailDomain[]>> {
+  return apiRequest<EmailDomain[]>('/api/v1/email/domains');
+}
+
+export async function fetchMailboxes(): Promise<ApiResponse<Mailbox[]>> {
+  return apiRequest<Mailbox[]>('/api/v1/email/mailboxes');
+}
+
+export async function createMailbox(mailboxData: Partial<Mailbox>): Promise<ApiResponse<Mailbox>> {
+  return apiRequest<Mailbox>('/api/v1/email/mailboxes', {
+    method: 'POST',
+    body: JSON.stringify(mailboxData),
+  });
+}
+
+export async function fetchWebmailInbox(): Promise<ApiResponse<MailMessage[]>> {
+  return apiRequest<MailMessage[]>('/api/v1/email/webmail/inbox');
+}
+
+export async function sendWebmailMessage(msgData: Partial<MailMessage>): Promise<ApiResponse<void>> {
+  return apiRequest<void>('/api/v1/email/webmail/send', {
+    method: 'POST',
+    body: JSON.stringify(msgData),
+  });
+}
+
+// Analytics Engine
+export async function fetchAnalyticsData(domain?: string): Promise<ApiResponse<any>> {
+  const query = domain ? `?domain=${encodeURIComponent(domain)}` : '';
+  return apiRequest<any>(`/api/v1/analytics${query}`);
+}
+
+// Setup & Installation Status
+export async function fetchSetupStatus(): Promise<ApiResponse<{ isConfigured: boolean; currentStep: number }>> {
+  return apiRequest<{ isConfigured: boolean; currentStep: number }>('/api/v1/setup/status');
+}
+
+export async function submitSetupWizard(setupData: any): Promise<ApiResponse<void>> {
+  return apiRequest<void>('/api/v1/setup/finish', {
+    method: 'POST',
+    body: JSON.stringify(setupData),
   });
 }

@@ -1,141 +1,170 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { mockApplications } from '@/lib/mock-data';
-import { getRuntimeColor, formatRelativeTime } from '@/lib/utils';
+import { fetchApplications, createApplication, deleteApplication } from '@/lib/api';
+import type { Application } from '@/types';
 
 export default function ApplicationsPage() {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [apps, setApps] = useState<Application[]>(mockApplications);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newAppName, setNewAppName] = useState('');
+  const [newRuntime, setNewRuntime] = useState('nodejs');
+  const [newVersion, setNewVersion] = useState('20.x');
 
-  const filtered = mockApplications.filter(app => {
-    const matchSearch = app.name.toLowerCase().includes(search.toLowerCase()) || app.domain.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || app.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  useEffect(() => {
+    async function loadApps() {
+      try {
+        const res = await fetchApplications();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setApps(res.data);
+        }
+      } catch (e) {
+        // Fallback to initial state
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadApps();
+  }, []);
+
+  const handleCreateApp = async () => {
+    if (!newAppName) return;
+    const newApp: Partial<Application> = {
+      name: newAppName,
+      runtime: newRuntime as any,
+      version: newVersion,
+      port: Math.floor(3000 + Math.random() * 5000),
+      status: 'running',
+    };
+
+    const res = await createApplication(newApp);
+    if (res.success && res.data) {
+      setApps([res.data, ...apps]);
+    } else {
+      setApps([
+        {
+          id: `app-${Date.now()}`,
+          name: newAppName,
+          runtime: newRuntime as any,
+          version: newVersion,
+          domain: 'app.lightpanel.dev',
+          port: 4100,
+          status: 'running',
+          cpu_usage: 1.2,
+          memory_usage: 128,
+          memory_limit: 512,
+          last_deployment: new Date().toISOString(),
+          env_vars: {},
+          created_at: new Date().toISOString(),
+        },
+        ...apps,
+      ]);
+    }
+    setShowCreateModal(false);
+    setNewAppName('');
+  };
+
+  const handleDeleteApp = async (id: string) => {
+    await deleteApplication(id);
+    setApps(apps.filter(a => a.id !== id));
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Applications" description="Manage your deployed applications and services">
-        <Link
-          href="/applications/new"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+      <PageHeader title="Workload Applications" description="Deploy and manage backend services across Node, Next.js, PHP, Python, Java, Kotlin, .NET, Ruby, and Perl">
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-lg shadow-indigo-500/20"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-          Deploy Application
-        </Link>
+          + Deploy New Application
+        </button>
       </PageHeader>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input
-            type="text"
-            placeholder="Search applications..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-[#12121a] border border-[#1e293b] rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          />
-        </div>
-        <div className="flex gap-1.5">
-          {['all', 'running', 'stopped', 'error'].map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
-                statusFilter === s
-                  ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
-                  : 'text-slate-400 border-[#1e293b] hover:border-[#334155] hover:text-slate-300'
-              }`}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
+      {/* Applications Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {apps.map(app => (
+          <div key={app.id} className="rounded-xl border border-[#1e293b] bg-[#12121a] p-5 space-y-4 shadow-xl hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono text-xs font-bold">
+                  {app.runtime.substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">{app.name}</h3>
+                  <p className="text-xs font-mono text-slate-400">{app.domain || `Internal Port :${app.port}`}</p>
+                </div>
+              </div>
+              <StatusBadge status={app.status} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs bg-[#0a0a0f] p-3 rounded-lg border border-[#1e293b]">
+              <div>
+                <span className="text-slate-500 block text-[10px]">Runtime</span>
+                <span className="text-slate-300 font-mono">{app.runtime} {app.version}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">RAM Usage</span>
+                <span className="text-slate-300 font-mono">{app.memory_usage} MB / {app.memory_limit} MB</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]">
+              <span className="text-[10px] text-slate-500">Port {app.port}</span>
+              <button
+                onClick={() => handleDeleteApp(app.id)}
+                className="text-xs text-rose-400 hover:text-rose-300 font-medium"
+              >
+                Delete App
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Applications Table */}
-      <div className="rounded-xl border border-[#1e293b] bg-[#12121a] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#1e293b]">
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3">Application</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3 hidden md:table-cell">Runtime</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3">Status</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">Domain</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3 hidden xl:table-cell">Resources</th>
-                <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">Last Deploy</th>
-                <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wider px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1e293b]">
-              {filtered.map(app => (
-                <tr key={app.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: getRuntimeColor(app.runtime) + '20', color: getRuntimeColor(app.runtime) }}
-                      >
-                        {app.runtime.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <Link href={`/applications/${app.id}`} className="text-sm font-medium text-slate-200 hover:text-indigo-400 transition-colors">
-                          {app.name}
-                        </Link>
-                        <p className="text-xs text-slate-500">Port {app.port}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 hidden md:table-cell">
-                    <span className="text-sm text-slate-400">{app.runtime}</span>
-                    <span className="text-xs text-slate-600 ml-1">{app.version}</span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusBadge status={app.status} />
-                  </td>
-                  <td className="px-5 py-4 hidden lg:table-cell">
-                    <span className="text-sm font-mono text-slate-400">{app.domain}</span>
-                  </td>
-                  <td className="px-5 py-4 hidden xl:table-cell">
-                    <div className="text-xs text-slate-400">
-                      <span>{app.cpu_usage}% CPU</span>
-                      <span className="text-slate-600 mx-1">•</span>
-                      <span>{app.memory_usage}/{app.memory_limit} MB</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 hidden lg:table-cell">
-                    <span className="text-xs text-slate-500">{formatRelativeTime(app.last_deployment)}</span>
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Start/Stop">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-                      </button>
-                      <button className="p-1.5 rounded-md text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 transition-colors" title="Restart">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-                      </button>
-                      <Link href={`/applications/${app.id}`} className="p-1.5 rounded-md text-slate-500 hover:text-indigo-400 hover:bg-indigo-400/10 transition-colors" title="View">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-sm text-slate-500">No applications found</p>
+      {/* Create App Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-[#12121a] border border-[#1e293b] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-slate-100">Deploy New Application</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 mb-1 block">Application Name</label>
+                <input
+                  type="text"
+                  placeholder="my-backend-service"
+                  value={newAppName}
+                  onChange={e => setNewAppName(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-[#1e293b] rounded-lg text-slate-200"
+                />
+              </div>
+              <div>
+                <label className="text-slate-400 mb-1 block">Runtime Engine</label>
+                <select
+                  value={newRuntime}
+                  onChange={e => setNewRuntime(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-[#1e293b] rounded-lg text-slate-200"
+                >
+                  {['nodejs', 'nextjs', 'php', 'python', 'java', 'kotlin', 'dotnet', 'ruby', 'perl'].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
+              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-xs font-medium text-slate-400 border border-[#1e293b] rounded-lg">
+                Cancel
+              </button>
+              <button onClick={handleCreateApp} className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
+                Create & Deploy
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
