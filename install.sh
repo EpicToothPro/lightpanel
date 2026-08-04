@@ -75,10 +75,16 @@ if [ ! -f "docker-compose.yml" ]; then
   exit 1
 fi
 
-# 7. Stop host-level redis/postgresql if conflicting with container network
+# 7. Stop host-level native web servers & database services if conflicting
+echo "[INFO] Releasing conflicting host ports (80, 443, 6379, 5432)..."
 if command -v systemctl &> /dev/null; then
-  systemctl stop redis-server redis postgresql 2>/dev/null || true
-  systemctl disable redis-server redis postgresql 2>/dev/null || true
+  systemctl stop nginx apache2 httpd redis-server redis postgresql 2>/dev/null || true
+  systemctl disable nginx apache2 httpd redis-server redis postgresql 2>/dev/null || true
+fi
+
+# Kill any stray processes binding to port 80 if fuser is available
+if command -v fuser &> /dev/null; then
+  fuser -k 80/tcp 2>/dev/null || true
 fi
 
 # 8. Check Docker installation
