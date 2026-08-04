@@ -6,7 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-red)](https://redis.io/)
 
-**LightPanel** is a production-ready, security-first private web-hosting control panel designed for infrastructure management on self-hosted Linux VPS servers and bare-metal nodes.
+**LightPanel** is a production-ready, security-first private web-hosting control panel designed for infrastructure management on self-hosted Linux VPS servers and bare-metal nodes. Created by **EpicToothPro**.
 
 > **Note**: LightPanel is strictly for personal infrastructure management. It is not a game panel, public SaaS, or customer billing system.
 
@@ -76,17 +76,17 @@ lightpanel/
 
 ---
 
-## 🚀 Quick Start & Installation
+## 🚀 Quick Start & Installation for @EpicToothPro
 
 ### Option A: Automated One-Command Installer (Linux VPS)
 ```bash
-sudo ./install.sh
+git clone https://github.com/EpicToothPro/lightpanel.git /opt/lightpanel && cd /opt/lightpanel && chmod +x install.sh && sudo ./install.sh && docker compose up -d
 ```
 
-### Option B: Docker Compose Local/Production Deployment
+### Option B: Manual Docker Compose Deployment
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-username/lightpanel.git
+git clone https://github.com/EpicToothPro/lightpanel.git
 cd lightpanel
 
 # 2. Configure environment
@@ -107,7 +107,7 @@ http://<your-server-ip>:3000/setup
 
 Follow the 10-step wizard:
 1. **Server Identity** (Hostname configuration)
-2. **Admin Account Creation** (Master credentials)
+2. **Admin Account Creation** (Master credentials for EpicToothPro)
 3. **PostgreSQL Database** (Panel database connection)
 4. **Redis Cache & Queue** (Task runner setup)
 5. **Mail Server Config** (Postfix / Dovecot setup)
